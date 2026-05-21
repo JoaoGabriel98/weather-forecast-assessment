@@ -1,0 +1,25 @@
+<div style="max-width: 640px; margin: 48px auto; font-family: system-ui, sans-serif;">
+  <h1>Weather Forecast</h1>
+
+  <p>Enter a US address with ZIP code to retrieve the current forecast.</p>
+
+  <% if flash.now[:alert].present? %>
+    <div style="padding: 12px; background: #fee; border: 1px solid #f99; margin-bottom: 16px;">
+      <%= flash.now[:alert] %>
+    </div>
+  <% end %>
+
+  <%= form_with scope: :forecast,
+              url: forecast_path,
+              method: :post,
+              data: { turbo: false } do |form| %>
+    <div style="margin-bottom: 12px;">
+      <%= form.label :address, "Address" %><br>
+      <%= form.text_field :address,
+                          placeholder: "1600 Pennsylvania Ave NW, Washington, DC 20500",
+                          style: "width: 100%; padding: 8px;" %>
+    </div>
+
+    <%= form.submit "Get forecast", style: "padding: 8px 12px;" %>
+  <% end %>
+</div>

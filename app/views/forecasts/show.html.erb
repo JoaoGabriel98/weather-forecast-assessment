@@ -1,0 +1,52 @@
+<div style="max-width: 640px; margin: 48px auto; font-family: system-ui, sans-serif;">
+  <h1>Weather Forecast</h1>
+
+  <div style="padding: 16px; border: 1px solid #ddd; border-radius: 8px;">
+    <h2>Location</h2>
+
+    <p>
+      <strong>Submitted address:</strong>
+      <%= @forecast.submitted_address %>
+    </p>
+
+    <p>
+      <strong>ZIP code:</strong>
+      <%= @forecast.zip_code %>
+    </p>
+
+    <h2>Forecast</h2>
+
+    <p>
+      <strong>Current temperature:</strong>
+      <%= @forecast.current_temperature %>°F
+    </p>
+
+    <p>
+      <strong>High:</strong>
+      <%= @forecast.high_temperature %>°F
+    </p>
+
+    <p>
+      <strong>Low:</strong>
+      <%= @forecast.low_temperature %>°F
+    </p>
+
+    <p>
+      <strong>Conditions:</strong>
+      <%= @forecast.description %>
+    </p>
+
+    <p>
+      <strong>Cache status:</strong>
+      <% if @forecast.from_cache? %>
+        Pulled from cache
+      <% else %>
+        Fresh API response
+      <% end %>
+    </p>
+  </div>
+
+  <p style="margin-top: 16px;">
+    <%= link_to "Search another address", root_path %>
+  </p>
+</div>
