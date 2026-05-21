@@ -1,6 +1,6 @@
 # Weather Forecast App
 
-Ruby on Rails application that accepts an address, extracts a US ZIP code, retrieves weather forecast data, caches the result for 30 minutes, and shows whether the response came from cache. Application fully abstracted. I had some hard times when writing some test use cases. I made the Must-Have test cases. Besides this, I spent a time reading the documentations, and thinking about a good and abstracted architecture. Willing to discuss about the decisions :)
+Ruby on Rails application that accepts an address, extracts a US ZIP code, retrieves weather forecast data, caches the result for 30 minutes, and shows whether the response came from cache. Application fully abstracted. I had some hard times when writing some test use cases. I made the Must-Have test cases. Besides this, I spent some time reading the documentation and thinking about a good and abstracted architecture. Willing to discuss the decisions :)
 
 ## Features
 
@@ -13,7 +13,7 @@ Ruby on Rails application that accepts an address, extracts a US ZIP code, retri
 - Human-readable weather description
 - 30-minute cache by ZIP code
 - Cache status indicator
-- Development-only cache inspector (For easier inspectation)
+- Development-only cache inspector (For easier inspection)
 - RSpec test coverage
 
 ## Tech Stack
@@ -28,7 +28,7 @@ Ruby on Rails application that accepts an address, extracts a US ZIP code, retri
 ## Setup
 
 ```bash
-git clone <repository-url>
+git clone https://github.com/JoaoGabriel98/weather-forecast-assessment.git
 cd weather_forecast_assessment
 bundle install
 bin/rails db:prepare
