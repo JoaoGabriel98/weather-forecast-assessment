@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-# Created for just deal with parsing
+# Extracts and normalizes US ZIP codes from free-form address input.
 class AddressZipExtractor
   ZIP_CODE_PATTERN = /\b\d{5}(?:-\d{4})?\b/
 
@@ -17,8 +17,8 @@ class AddressZipExtractor
 
     return nil unless match
 
-    # We normalize ZIP+4 values to the base 5-digit ZIP because the forecast
-    # requirement is based on ZIP code and the cache should group equivalent requests.
+    # ZIP+4 values are normalized to the base 5-digit ZIP because the forecast
+    # requirement and cache key are ZIP-code based.
     match[0].split("-").first
   end
 end

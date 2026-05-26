@@ -1,6 +1,8 @@
 # Weather Forecast App
 
-Ruby on Rails application that accepts an address, extracts a US ZIP code, retrieves weather forecast data, caches the result for 30 minutes, and shows whether the response came from cache. Application fully abstracted. I had some hard times when writing some test use cases. I made the Must-Have test cases. Besides this, I spent some time reading the documentation and thinking about a good and abstracted architecture. Willing to discuss the decisions :)
+Ruby on Rails application that accepts an address, extracts a US ZIP code, retrieves weather forecast data, caches the result for 30 minutes, and shows whether the response came from cache.
+
+The implementation keeps controllers thin, isolates external API calls, and uses small service objects to keep the code simple, testable, and easy to evolve.
 
 ## Features
 
@@ -13,7 +15,6 @@ Ruby on Rails application that accepts an address, extracts a US ZIP code, retri
 - Human-readable weather description
 - 30-minute cache by ZIP code
 - Cache status indicator
-- Development-only cache inspector (For easier inspection)
 - RSpec test coverage
 
 ## Tech Stack
@@ -27,13 +28,31 @@ Ruby on Rails application that accepts an address, extracts a US ZIP code, retri
 
 ## Setup
 
+Clone the repository:
+
 ```bash
 git clone https://github.com/JoaoGabriel98/weather-forecast-assessment.git
+git clone https://github.com/JoaoGabriel98/weather-forecast-assessment.git
 cd weather_forecast_assessment
-bundle install
-bin/rails db:prepare
-bin/rails server
 ````
+
+Install dependencies:
+
+```bash
+bundle install
+```
+
+Prepare the database:
+
+```bash
+bin/rails db:prepare
+```
+
+Start the server:
+
+```bash
+bin/rails server
+```
 
 Open the app at:
 
@@ -57,16 +76,6 @@ Then restart the Rails server.
 
 ```bash
 bundle exec rspec
-```
-
-## Example Addresses
-
-```text
-Beverly Hills, CA 90210
-```
-
-```text
-1600 Pennsylvania Ave NW, Washington, DC 20500
 ```
 
 ## Main Flow
@@ -96,7 +105,7 @@ Handles HTTP concerns only:
 
 ### Weather::ForecastLookup
 
-Main application service.
+Main application service and facade for the forecast lookup use case.
 
 It coordinates:
 
@@ -107,6 +116,12 @@ It coordinates:
 * forecast retrieval
 * cache write
 * standardized success/failure response
+
+The controller only needs to call:
+
+```ruby
+Weather::ForecastLookup.call(address: address)
+```
 
 ### AddressZipExtractor
 
@@ -131,7 +146,7 @@ This is separated from forecast retrieval because geocoding and weather lookup a
 
 Calls the Open-Meteo Forecast API using latitude and longitude.
 
-It converts raw API JSON into a normalized `WeatherForecast` object.
+It converts raw API JSON into a normalized `WeatherForecast` object, so the rest of the application does not depend on the external API response shape.
 
 ### WeatherForecast
 
@@ -171,7 +186,7 @@ or:
 ApplicationResult.failure(error)
 ```
 
-This keeps controllers simple and avoids mixed return types.
+This keeps controllers simple and avoids mixed return types such as `nil`, strings, hashes, or exceptions for expected business failures.
 
 ## Cache Strategy
 
@@ -185,33 +200,49 @@ The cache expires after 30 minutes.
 
 Different addresses with the same ZIP code reuse the same cached forecast, which matches the requirement for subsequent requests by ZIP code.
 
-## Cache Inspector
+The submitted address is treated as request context. The weather data is cached by ZIP, but the address displayed to the user comes from the current request.
 
-In development, visit:
+## Error Handling
+
+Expected failures return controlled `ApplicationResult.failure` responses.
+
+Examples:
+
+* blank address
+* missing ZIP code
+* ZIP code not found
+* external API failure
+* invalid API response
+
+The controller displays user-friendly errors instead of exposing low-level exceptions.
+
+## Design Principles
+
+### Single Responsibility
+
+Each class has one clear responsibility:
 
 ```text
-http://localhost:3000/cache
+ForecastsController      -> HTTP request/response
+ForecastLookup           -> forecast lookup use case
+AddressZipExtractor      -> ZIP parsing
+GeocodingClient          -> ZIP to coordinates
+ForecastClient           -> coordinates to forecast
+WeatherCodeMapper        -> weather code to description
+WeatherForecast          -> normalized forecast data
+ApplicationResult        -> success/failure contract
 ```
 
-This page shows local forecast cache entries, including expiration time and a live countdown.
+External API details are isolated in client classes.
 
-This route should remain development-only and should not be exposed in production.
+### DRY
 
-## Important Trade-offs
+Cache expiration and cache key generation are centralized in `Weather::ForecastLookup`.
 
-This app intentionally supports US ZIP codes only because the requirement is ZIP-based.
+### YAGNI
 
-It does not attempt full global address parsing or validation. That would require a dedicated address provider and would add unnecessary complexity for this assessment.
+The app intentionally does not add React, GraphQL, Kafka, background jobs, microservices, or a database table for forecasts because they are not required for this synchronous forecast lookup flow.
 
-The app also does not use React, GraphQL, background jobs, Kafka, or a database because the requested feature is a synchronous Rails flow with short-lived cache behavior.
+### Testability
 
-## Production Considerations
-
-For production, I would consider:
-
-* Redis instead of in-memory cache
-* structured logging for external API failures
-* metrics around cache hit rate
-* API timeout and retry policy
-* full address validation if international support is required
-* authentication around any internal cache/debug tools
+Most business logic is isolated in small service objects and can be tested without full request specs.

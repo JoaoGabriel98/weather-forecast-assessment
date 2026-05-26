@@ -3,7 +3,6 @@
 class ApplicationResult
   attr_reader :value, :error
 
-  # Cleaner way to construct success and failure results without needing to know the internal structure of the class.
   def self.success(value)
     new(success: true, value: value)
   end

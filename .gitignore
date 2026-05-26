@@ -32,3 +32,11 @@
 
 # Ignore master key for decrypting credentials and more.
 /config/master.key
+
+log/development.log
+log/test.log
+storage/development.sqlite3
+storage/test.sqlite3
+tmp/*
+.DS_Store
+__MACOSX

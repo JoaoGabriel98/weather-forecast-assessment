@@ -70,6 +70,50 @@ RSpec.describe Weather::ForecastLookup do
       expect(Weather::GeocodingClient).not_to have_received(:call)
       expect(Weather::ForecastClient).not_to have_received(:call)
     end
+
+    it "uses cached weather data but keeps the current submitted address" do
+      Rails.cache.write(
+        "weather_forecast:90210",
+        build_forecast(from_cache: false),
+        expires_in: described_class::CACHE_EXPIRATION
+      )
+
+      result = described_class.call(address: "Another address, CA 90210")
+
+      expect(result).to be_success
+      expect(result.value).to be_from_cache
+      expect(result.value.submitted_address).to eq("Another address, CA 90210")
+      expect(result.value.zip_code).to eq("90210")
+    end
+
+    it "uses cache when the same address is requested twice" do
+      allow(Rails.cache).to receive(:write).and_call_original
+      allow(Weather::GeocodingClient).to receive(:call)
+        .with("90210")
+        .and_return(ApplicationResult.success({ latitude: 34.0901, longitude: -118.4065 }))
+
+      allow(Weather::ForecastClient).to receive(:call)
+        .with(zip_code: "90210",
+              submitted_address: "Beverly Hills, CA 90210",
+              latitude: 34.0901,
+              longitude: -118.4065)
+        .and_return(ApplicationResult.success(build_forecast(from_cache: false)))
+
+      # First call to populate the cache
+      first_result = described_class.call(address: "Beverly Hills, CA 90210")
+      expect(first_result).to be_success
+      expect(first_result.value).not_to be_from_cache
+
+      # Second call should hit the cache
+      second_result = described_class.call(address: "Beverly Hills, CA 90210")
+      expect(second_result).to be_success
+      expect(second_result.value).to be_from_cache
+
+      expect(Weather::GeocodingClient).to have_received(:call).once
+      expect(Weather::ForecastClient).to have_received(:call).once
+
+      expect(Rails.cache).to have_received(:write).once
+    end
   end
 
   def build_forecast(from_cache:)
@@ -80,7 +124,7 @@ RSpec.describe Weather::ForecastLookup do
       high_temperature: 81.2,
       low_temperature: 63.8,
       description: "Clear sky",
-      from_cache: false
+      from_cache: from_cache
     )
   end
 end

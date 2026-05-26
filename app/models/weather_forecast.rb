@@ -31,7 +31,7 @@ class WeatherForecast
     from_cache
   end
 
-  def with_cache_status(from_cache)
+  def with_request_context(submitted_address:, from_cache:)
     self.class.new(
       submitted_address: submitted_address,
       zip_code: zip_code,

@@ -1,9 +1,10 @@
 # frozen_string_literal: true
 
 module Weather
-  # API call after we get the coordinates for the address. This is where we get the weather data.
+  # Retrieves weather forecast data from coordinates and normalizes the API response.
   class ForecastClient
     BASE_URL = "https://api.open-meteo.com"
+    ERROR_MESSAGE = "Could not retrieve the weather forecast. Please try again."
 
     def self.call(zip_code:, submitted_address:, latitude:, longitude:)
       new(
@@ -23,12 +24,13 @@ module Weather
 
     def call
       response = connection.get("/v1/forecast", request_params)
-      body = JSON.parse(response.body)
 
-      ApplicationResult.success(build_forecast(body))
-    rescue Faraday::Error, JSON::ParserError, KeyError, NoMethodError
+      return ApplicationResult.failure(ERROR_MESSAGE) unless response.success?
+
+      ApplicationResult.success(build_forecast(JSON.parse(response.body)))
+    rescue Faraday::Error, JSON::ParserError, KeyError
       # The UI should receive a stable error message instead of leaking API details.
-      ApplicationResult.failure("Could not retrieve the weather forecast. Please try again.")
+      ApplicationResult.failure(ERROR_MESSAGE)
     end
 
     private
@@ -53,8 +55,8 @@ module Weather
         submitted_address: @submitted_address,
         zip_code: @zip_code,
         current_temperature: current.fetch("temperature_2m"),
-        high_temperature: daily.fetch("temperature_2m_max").first,
-        low_temperature: daily.fetch("temperature_2m_min").first,
+        high_temperature: daily.fetch("temperature_2m_max").fetch(0),
+        low_temperature: daily.fetch("temperature_2m_min").fetch(0),
         description: Weather::WeatherCodeMapper.call(current.fetch("weather_code")),
         from_cache: false
       )

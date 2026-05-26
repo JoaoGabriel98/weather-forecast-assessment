@@ -1,8 +1,7 @@
 # frozen_string_literal: true
 
 module Weather
-  # Application Service that orchestrates the process of looking up a weather forecast for a given address.
-  # We take care of the cache here
+  # Application service that orchestrates forecast lookup for a submitted address.
   class ForecastLookup
     CACHE_EXPIRATION = 30.minutes
 
@@ -22,19 +21,14 @@ module Weather
       return ApplicationResult.failure("Please include a valid US ZIP code in the address.") unless zip_code
 
       cached_forecast = Rails.cache.read(cache_key(zip_code))
-
-      if cached_forecast
-        # The cached object is copied with an updated flag so the UI can tell the user
-        # that this response did not trigger a new external API request.
-        return ApplicationResult.success(cached_forecast.with_cache_status(true))
-      end
+      return ApplicationResult.success(forecast_for_current_request(cached_forecast, from_cache: true)) if cached_forecast
 
       fresh_forecast_result = fetch_fresh_forecast(zip_code)
       return fresh_forecast_result if fresh_forecast_result.failure?
 
       Rails.cache.write(cache_key(zip_code), fresh_forecast_result.value, expires_in: CACHE_EXPIRATION)
 
-      ApplicationResult.success(fresh_forecast_result.value.with_cache_status(false))
+      ApplicationResult.success(forecast_for_current_request(fresh_forecast_result.value, from_cache: false))
     end
 
     private
@@ -48,6 +42,13 @@ module Weather
         submitted_address: @address,
         latitude: location_result.value.fetch(:latitude),
         longitude: location_result.value.fetch(:longitude)
+      )
+    end
+
+    def forecast_for_current_request(forecast, from_cache:)
+      forecast.with_request_context(
+        submitted_address: @address,
+        from_cache: from_cache
       )
     end
 

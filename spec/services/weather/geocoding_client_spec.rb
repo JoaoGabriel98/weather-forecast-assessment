@@ -41,7 +41,18 @@ RSpec.describe Weather::GeocodingClient do
       result = described_class.call("00000")
 
       expect(result).to be_failure
-      expect(result.error).to eq("Could not find 00000.")
+      expect(result.error).to eq("Could not find a location for ZIP code 00000.")
+    end
+
+    it "returns a failure when the geocoding API responds with an error" do
+      stub_request(:get, "https://geocoding-api.open-meteo.com/v1/search")
+        .with(query: hash_including("name" => "90210"))
+        .to_return(status: 500, body: "Server error")
+
+      result = described_class.call("90210")
+
+      expect(result).to be_failure
+      expect(result.error).to eq("Could not resolve the ZIP code location. Please try again.")
     end
   end
 end

@@ -40,5 +40,21 @@ RSpec.describe Weather::ForecastClient do
       expect(forecast.description).to eq("Clear sky")
       expect(forecast).not_to be_from_cache
     end
+
+    it "returns a failure when the forecast API responds with an error" do
+      stub_request(:get, "https://api.open-meteo.com/v1/forecast")
+        .with(query: hash_including("latitude" => "34.0901", "longitude" => "-118.4065"))
+        .to_return(status: 500, body: "Server error")
+
+      result = described_class.call(
+        zip_code: "90210",
+        submitted_address: "Beverly Hills, CA 90210",
+        latitude: 34.0901,
+        longitude: -118.4065
+      )
+
+      expect(result).to be_failure
+      expect(result.error).to eq("Could not retrieve the weather forecast. Please try again.")
+    end
   end
 end
